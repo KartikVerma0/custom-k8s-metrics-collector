@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: custom-metrics-collector
+  name: custom-metrics-collector
+  namespace: custom-metrics-collection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: custom-metrics-collector
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: custom-metrics-collector
+    spec:
+      serviceAccountName: custom-metrics-collector
+      containers:
+      - image: kartikvr20/custom-metrics-collector:v0.1.0
+        name: custom-metrics-collector
+        resources:
+          requests:
+            cpu: "0.01"
+            memory: 100Mi
+          limits:
+            cpu: "0.1"
+            memory: 500Mi
+        env:
+          - name: METRICS_RESOLUTION_TIME
+            value: "15"
