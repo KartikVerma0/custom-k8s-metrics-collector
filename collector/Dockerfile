@@ -1,12 +1,12 @@
-FROM dhi.io/python:3.10-alpine3.22-dev as build
-WORKDIR /tmp/build
-RUN python -m venv /tmp/build/venv
+FROM dhi.io/python:3.10-alpine3.22-dev AS build
+WORKDIR /app
+RUN python -m venv /app/venv
 COPY requirements_collector.txt .
 RUN venv/bin/pip install --no-cache-dir -r requirements_collector.txt
 
-FROM dhi.io/python:3.10-alpine3.22 as runtime
+FROM dhi.io/python:3.10-alpine3.22 AS runtime
 WORKDIR /app
-COPY --from=build /tmp/build/venv /app/venv
+COPY --from=build /app/venv /app/venv
 COPY . .
-# Use the venv's Python interpreter
-ENTRYPOINT ["/app/venv/bin/python", "collector.py"]
+ENV PATH="/app/venv/bin:$PATH"
+ENTRYPOINT ["python", "collector.py"]

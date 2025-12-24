@@ -18,7 +18,7 @@ spec:
     spec:
       serviceAccountName: custom-metrics-collector
       containers:
-      - image: kartikvr20/custom-metrics-collector:v0.1.0
+      - image: kartikvr20/custom-metrics-collector:v0.1.1
         name: custom-metrics-collector
         resources:
           requests:
@@ -30,3 +30,9 @@ spec:
         env:
           - name: METRICS_RESOLUTION_TIME
             value: "15"
+          - name: METRICS_PROCESSOR_SERVICE
+            value: "metrics-processor"
+          - name: METRICS_PROCESSOR_SERVICE_NAMESPACE
+            value: "custom-metrics-collection"
+          - name: METRICS_PROCESSOR_SERVICE_PORT
+            value: "9376"

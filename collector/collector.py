@@ -5,7 +5,6 @@ import time
 import argparse
 import requests
 
-from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -19,6 +18,7 @@ def setup_arg_parsing():
 args = setup_arg_parsing()
 
 if args.dev == True:
+    from dotenv import load_dotenv
     load_dotenv()
     config.load_kube_config()
 else:
@@ -60,7 +60,8 @@ def get_metrics_processor_service_url():
     if (args.dev == False):
         service_name = os.getenv("METRICS_PROCESSOR_SERVICE") if os.getenv("METRICS_PROCESSOR_SERVICE") else "metrics_processor"
         service_namespace = os.getenv("METRICS_PROCESSOR_SERVICE_NAMESPACE") if os.getenv("METRICS_PROCESSOR_SERVICE_NAMESPACE") else "custom-metrics-collection"
-        return f"http://{service_name}.{service_namespace}.svc.cluster.local"
+        service_port = int(os.getenv("METRICS_PROCESSOR_SERVICE_PORT")) if os.getenv("METRICS_PROCESSOR_SERVICE_PORT") else 9376
+        return f"http://{service_name}.{service_namespace}:{service_port}"
     else:
         return os.getenv("METRICS_PROCESSOR_URL")
 
