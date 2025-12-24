@@ -69,7 +69,8 @@ def send_metrics_to_metrics_processor(metrics):
     url = get_metrics_processor_service_url() + "/node_metrics"
     try:
         response = requests.post(url, json=metrics, timeout=10)
-        print(response)
+        if args.dev == True: 
+            logger.debug(f"Response status Code: {response.status_code}")
         response.raise_for_status()
     except:
         logger.error("Problem sending metrics data to metrics_processor")
