@@ -76,6 +76,31 @@ Grafana is pre-configured with a MySQL datasource pointing to:
 
 The datasource is automatically provisioned and will appear in Grafana's datasources list.
 
+## Dashboard Queries
+
+When creating dashboards in Grafana, you can use the following SQL queries to visualize metrics from the `node_metrics` table.
+
+### CPU Metrics Query
+
+Query to visualize CPU usage (in millicores) over time for a specific node:
+
+```sql
+SELECT
+  collected_at AS time,
+  cpu_millicores
+FROM node_metrics
+WHERE node_name = 'minikube'
+ORDER BY collected_at;
+```
+
+**Usage in Grafana:**
+1. Create a new panel in your dashboard
+2. Select the MySQL datasource
+3. Set the query mode to "Table" or "Time series"
+4. Paste the query above
+5. Adjust the `node_name` filter as needed for different nodes
+6. The `collected_at` column is aliased as `time` for Grafana's time series visualization
+
 ## Customization
 
 ### Change Storage Size
