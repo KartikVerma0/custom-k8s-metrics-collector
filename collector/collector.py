@@ -72,8 +72,8 @@ def send_metrics_to_metrics_processor(metrics):
         if args.dev == True: 
             logger.debug(f"Response status Code: {response.status_code}")
         response.raise_for_status()
-    except:
-        logger.error("Problem sending metrics data to metrics_processor")
+    except Exception as e:
+        logger.error(f"Problem sending metrics data to metrics_processor: {str(e)}")
 
 def scheduler():
     metrics_resolution = metrics_resolution_validator()
