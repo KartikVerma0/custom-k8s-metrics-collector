@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: metrics-processor
+  name: metrics-processor
+  namespace: custom-metrics-collection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-processor
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: metrics-processor
+    spec:
+      containers:
+      - image: kartikvr20/custom-metrics-processor:v0.1.0
+        name: metrics-processor
+        resources:
+          requests:
+            cpu: "0.01"
+            memory: 100Mi
+          limits:
+            cpu: "0.1"
+            memory: 500Mi
+        env:
+        - name: DB_HOST
+          value: mysql
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password

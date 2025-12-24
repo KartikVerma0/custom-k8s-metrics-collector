@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-processor
+  namespace: custom-metrics-collection
+spec:
+  selector:
+    app: metrics-processor
+  ports:
+    - protocol: TCP
+      port: 9376
+      targetPort: 9376
