@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: grafana
+  name: grafana
+  namespace: custom-metrics-collection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      initContainers:
+      - name: install-mysql-plugin
+        image: alpine:latest
+        command:
+        - sh
+        - -c
+        - |
+          apk add --no-cache curl unzip
+          echo "Installing MySQL datasource plugin..."
+          mkdir -p /grafana-data/plugins
+          cd /grafana-data/plugins
+          if [ ! -d "mysql-datasource" ]; then
+            echo "Downloading plugin..."
+            curl -L -k "https://grafana.com/api/plugins/mysql-datasource/versions/latest/download" -o mysql-datasource.zip
+            unzip -q mysql-datasource.zip
+            rm mysql-datasource.zip
+            echo "Plugin installed successfully"
+          else
+            echo "Plugin already exists, skipping installation"
+          fi
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /grafana-data
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+          name: grafana
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: grafana-secret
+              key: admin-user
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grafana-secret
+              key: admin-password
+        - name: GF_PATHS_PROVISIONING
+          value: "/etc/grafana/provisioning"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: grafana-dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
+        resources:
+          requests:
+            cpu: "0.1"
+            memory: 256Mi
+          limits:
+            cpu: "0.5"
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+
