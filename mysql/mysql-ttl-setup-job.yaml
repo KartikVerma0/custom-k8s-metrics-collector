@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-ttl-setup
+  namespace: custom-metrics-collection
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: setup-ttl
+        image: mysql:8.0
+        command:
+        - sh
+        - -c
+        - |
+          mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD <<EOF
+          USE nodes;
+          SET GLOBAL event_scheduler = ON;
+          DROP EVENT IF EXISTS cleanup_old_node_metrics;
+          CREATE EVENT cleanup_old_node_metrics
+          ON SCHEDULE EVERY 5 MINUTE
+          DO
+            DELETE FROM nodes.node_metrics 
+            WHERE collected_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE);
+          SELECT 'TTL event created successfully' AS status;
+          SHOW EVENTS LIKE 'cleanup_old_node_metrics';
+          EOF
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-root-password
+

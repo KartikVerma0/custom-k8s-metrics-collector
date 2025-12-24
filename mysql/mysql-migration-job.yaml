@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-table-migration
+  namespace: custom-metrics-collection
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate-table
+        image: mysql:8.0
+        command:
+        - sh
+        - -c
+        - |
+          # Check if migration is needed
+          COLUMN_EXISTS=$(mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD -N -e "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'nodes' AND TABLE_NAME = 'node_metrics' AND COLUMN_NAME = 'id'" nodes 2>/dev/null)
+          
+          if [ "$COLUMN_EXISTS" = "0" ]; then
+            echo "Migration needed - id column does not exist"
+            echo "Starting migration..."
+            
+            set -e
+            mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD nodes -e "ALTER TABLE node_metrics DROP PRIMARY KEY;"
+            mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD nodes -e "ALTER TABLE node_metrics ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY FIRST;"
+            mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD nodes -e "ALTER TABLE node_metrics ADD INDEX idx_node_name (node_name);"
+            mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD nodes -e "ALTER TABLE node_metrics ADD UNIQUE KEY unique_node_timestamp (node_name, collected_at);"
+            
+            echo "✓ Migration completed successfully"
+            mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD nodes -e "SHOW CREATE TABLE node_metrics;"
+          else
+            echo "Migration not needed - id column already exists"
+            echo "Verifying table structure..."
+            mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD nodes -e "SHOW CREATE TABLE node_metrics;" 2>/dev/null
+          fi
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-root-password
